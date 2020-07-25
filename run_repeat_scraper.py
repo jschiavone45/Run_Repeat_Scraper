@@ -6,21 +6,21 @@ import math
 
 
 #set up to write to csv_file
-csv_file = open('running_shoes2.csv', 'w', encoding='utf-8', newline='')
+csv_file = open('running_shoes.csv', 'w', encoding='utf-8', newline='')
 csv_writer = csv.writer(csv_file)
 csv_writer.writerow(['product', 'brand', 'core_score', 'expert_score', 'reviews', 'retail_price', 'sale_price',
-                    'terrain', 'arch_support', 'weight_men', 'weight_women', 'heel_to_toe_men', 'heel_to_toe_women', 'release_date', 'width', 'update', 'summary'])
+                    'terrain', 'arch_support', 'weight_men', 'weight_women', 'heel_to_toe_men', 'heel_to_toe_women', 'release_date', 'width', 'update', 'url', 'summary'])
 
 driver = webdriver.Chrome()
 driver.get("https://runrepeat.com/ranking/rankings-of-running-shoes?page=1")
 
 
-# creating list of product pages
+# creating list of product pagesgi
 
 num_products = driver.find_element_by_xpath('//*[@id="rankings-header"]/h1').text
 num_products = int(re.findall('\d+', num_products)[0])
 total_pages = math.ceil(num_products / 30)
-url_list = [f'https://runrepeat.com/ranking/rankings-of-running-shoes?page={i + 3}' for i in range(total_pages)]
+url_list = [f'https://runrepeat.com/ranking/rankings-of-running-shoes?page={i + 1}' for i in range(total_pages)]
 
 
 product_links = driver.find_elements_by_xpath('//div[@class="product-name hidden-sm hidden-xs"]/a')
@@ -39,17 +39,18 @@ for url in url_list:
     product_links = [x.get_attribute('href') for x in product_links]
 
     #cycle through each product_page and scrape fields
-    for i in range(len(product_links)):
-        driver.get(product_links[i])
+    for link in product_links:
+        driver.get(link)
 
         driver.execute_script("window.scrollTo(0, 1900);")
-        time.sleep(2)
+        time.sleep(3)
         #clicking to expand table
         try:
             more_facts_button = driver.find_element_by_xpath('//div[@class="btn-more-container"]')
             more_facts_button.click()
-        except:
-            pass
+        except Exception as e:
+            print(type(e), e)
+            print(f'Button not found on {link}')
 
         time.sleep(2)
 
@@ -101,6 +102,7 @@ for url in url_list:
             summary = driver.find_element_by_xpath('//*[@id="bottom_line_section"]/div[2]').text
         except:
             summary = 'NaN'
+
         try:
             price_list = spec_dict['Price'].strip().split(' ', 1)
             retail_price, sale_price = price_list
@@ -111,7 +113,6 @@ for url in url_list:
             except:
                 retail_price = 'NaN'
                 sale_price = 'NaN'
-
         try:
             weight_men, weight_women = spec_dict['Weight'].split('|')
         except:
@@ -124,7 +125,7 @@ for url in url_list:
 
         # writing next row of csv file with current product_page
         write_row = [product, spec_dict['Brand'], core_score, expert_score, reviews, retail_price, sale_price, spec_dict['Terrain'],
-                    spec_dict['Arch support'], weight_men, weight_women, heel_to_toe_men, heel_to_toe_women, spec_dict['Release date'], spec_dict['Width'], spec_dict['Update'], summary]
+                    spec_dict['Arch support'], weight_men, weight_women, heel_to_toe_men, heel_to_toe_women, spec_dict['Release date'], spec_dict['Width'], spec_dict['Update'], link, summary]
         csv_writer.writerow(write_row)
 
 
